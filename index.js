@@ -56,24 +56,8 @@ const verifyToken = async (req, res, next) => {
 
 
 const UsserCollections=client.db('UrbannextDB').collection('users')
+const Propertiescollectios=client.db('UrbannextDB').collection('properties')
 
-
-
-
-// const verifyToken = (req, res, next) => {
-//   // console.log('inside verify token', req.headers.authorization);
-//   if (!req.headers.authorization) {
-//     return res.status(401).send({ message: 'unauthorized access' });
-//   }
-//   const token = req.headers.authorization.split(' ')[1];
-//   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-//     if (err) {
-//       return res.status(401).send({ message: 'unauthorized access' })
-//     }
-//     req.decoded = decoded;
-//     next();
-//   })
-// }
 
 
 const verifyAdmin = async (req, res, next) => {
@@ -114,7 +98,7 @@ const verifyAgent=async(req,res,next)=>{
 
 
 
-app.get('/user',verifyToken,verifyAdmin,async (req, res) => {
+app.get('/user',async (req, res) => {
   try {
     
     const users = await UsserCollections.find({}).toArray();
@@ -196,7 +180,22 @@ app.patch('/user/agent/:id',async(req,res)=>{
   const result=await UsserCollections.updateOne(filter,updatedDoc)
   res.send(result)
 })
+app.post('/properties',async(req,res)=>{
+  const allproperties=req.body
+  const result=await Propertiescollectios.insertOne(allproperties)
+  res.send(result)
+})
 
+
+
+
+
+
+
+
+
+
+// -------------------------------------------
 
 
 app.delete('/user/:id', async (req, res) => {
