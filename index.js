@@ -186,9 +186,67 @@ app.post('/properties',async(req,res)=>{
   res.send(result)
 })
 
+app.get('/properties', async (req,res)=>{
+
+  const cursor =Propertiescollectios.find()
+  const result= await cursor.toArray()
+  res.send(result);
+  
+  
+  })
+
+  app.patch('/properties/:id',async(req,res)=>{
+    const id=req.params.id;
+    const filter={_id:new ObjectId(id)}
+    const updatedDoc={
+        $set:{
+            status:'verified'
+        }
+    }
+    const result=await Propertiescollectios.updateOne(filter,updatedDoc)
+    res.send(result)
+  })
 
 
 
+
+
+
+
+  app.get('/properties/agent/:agentEmail', async (req,res)=>{
+
+    const agentEmail = req.params.agentEmail;
+    const query = { agentEmail };
+    const result = await Propertiescollectios.find(query).toArray();
+    res.send(result);
+    
+    
+    })
+    app.delete('/properties/agent/:agentEmail/:_id', async (req, res) => {
+      const _id = req.params._id; // Use correct parameter name here
+      console.log('id from delete', _id);
+      const query = { _id: new ObjectId(_id) };
+      const result = await Propertiescollectios.deleteOne(query);
+      res.send(result);
+    });
+    
+
+    // app.put('/properties/agent/:agentEmail/:_id', async (req, res) => {
+    //   const id = req.params.id;
+    //   const filter = { _id: new ObjectId(id) }
+    //   const options = { upsert: true }
+    //   const updateProduct = req.body;
+    //   const product = {
+    //     $set: {
+    //       photo: updateProduct.photo,
+        
+    //     }
+    //   }
+    
+    //   const result=await Propertiescollectios.updateOne(filter,
+    //     product,options)
+    //   res.send(result)
+    // })
 
 
 
