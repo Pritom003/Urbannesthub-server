@@ -58,6 +58,8 @@ const verifyToken = async (req, res, next) => {
 const UsserCollections=client.db('UrbannextDB').collection('users')
 const Propertiescollectios=client.db('UrbannextDB').collection('properties')
 const Reviewcollection=client.db('UrbannextDB').collection('reviews')
+const WishCollection=client.db('UrbannextDB').collection('wished')
+const OfferedCollection=client.db('UrbannextDB').collection('useroffer')
 
 
 
@@ -206,7 +208,132 @@ app.get('/reviews',async (req,res)=>{
     const result = await Reviewcollection.deleteOne(query);
     res.send(result);
   });
+  // wishlist api
+  app.post('/wished',async(req,res)=>{
+    const allwished=req.body
+    const result=await WishCollection.insertOne(allwished)
+    res.send(result)
+  })
   
+  app.get('/wished', async (req,res)=>{
+
+    const cursor =WishCollection.find()
+    const result= await cursor.toArray()
+    res.send(result);
+    
+    
+    })
+
+
+
+    app.get('/wished/:wisheremail', async (req, res) => {
+      const wisheremail = req.params.wisheremail; 
+      const query = { wisheremail };
+      const result = await WishCollection.find(query).toArray();
+      res.send(result);
+    });
+
+
+
+    app.get('/wished/makeoffer/:_id', async (req, res) => {
+      const _id = req.params._id; 
+      const query = { _id: new ObjectId(_id) }; 
+      const result = await WishCollection.findOne(query);
+      res.send(result);
+    });
+    
+
+// offer api
+app.post('/offers',async(req,res)=>{
+  const alloffers=req.body
+  const result=await OfferedCollection.insertOne(alloffers)
+  res.send(result)
+})
+app.get('/offers',async (req,res)=>{
+
+  const cursor =OfferedCollection.find()
+  const result= await cursor.toArray()
+  res.send(result);
+  
+  
+  })
+
+  // Add the following routes to handle offer acceptance, rejection, and removal
+// app.put('/offers/:id', async (req, res) => {
+//   const offerId = req.params.id;
+//   const status = req.body.request; // Assuming the client sends the request status in the body
+
+//   // Update the offer status
+//   const result = await OfferedCollection.updateOne({ _id: ObjectId(offerId) }, { $set: { request: status } });
+
+//   res.send(result);
+// });
+
+// app.put('/offers/reject/:propertyId', async (req, res) => {
+//   const offerId = req.body.offerId;
+//   const propertyId = req.params.propertyId;
+
+//   // Reject other offers for the same property
+//   const result = await OfferedCollection.updateMany(
+//     { propertyId: propertyId, _id: { $ne: ObjectId(offerId) } },
+//     { $set: { request: 'rejected' } }
+//   );
+
+//   res.send(result);
+// });
+
+// Update the existing route for accepting an offer
+
+
+app.put('/offers/reject/:propertyId', async (req, res) => {
+  const offerId = req.body.offerId;
+  const propertyId = req.params.propertyId;
+
+  // Reject other offers for the same property
+  const result = await OfferedCollection.updateMany(
+    { propertyId: propertyId, _id: { $ne:new ObjectId(offerId) } },
+    { $set: { request: 'rejected' } }
+  );
+
+  res.send(result);
+});
+
+
+
+
+
+
+app.patch('/offers/:id', async (req, res) => {
+  const offerId = req.params.id;
+  const status = req.body.request;
+
+  const result = await OfferedCollection.updateOne(
+    { _id: new ObjectId(offerId) },
+    { $set: { request: status } }
+  );
+
+  if (status === 'accepted') {
+    const { propertyTitle, propertyLocation, agentName } = req.body;
+
+    // Update offers with matching properties
+    await OfferedCollection.updateMany(
+      {
+        propertyTitle: propertyTitle,
+        propertyLocation: propertyLocation,
+        agentName: agentName,
+        _id: { $ne: new ObjectId(offerId) }
+      },
+      { $set: { request: 'rejected' } }
+    );
+  }
+
+  res.send(result);
+});
+
+
+
+
+
 
 // property api
 app.post('/properties',async(req,res)=>{
@@ -254,7 +381,17 @@ app.get('/properties',async (req,res)=>{
   })
 
 
-
+  app.patch('/properties/rejected/:id',async(req,res)=>{
+    const id=req.params.id;
+    const filter={_id:new ObjectId(id)}
+    const updatedDoc={
+        $set:{
+            status:'rejected'
+        }
+    }
+    const result=await Propertiescollectios.updateOne(filter,updatedDoc)
+    res.send(result)
+  })
 
 
 
