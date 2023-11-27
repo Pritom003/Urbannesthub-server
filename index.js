@@ -57,6 +57,7 @@ const verifyToken = async (req, res, next) => {
 
 const UsserCollections=client.db('UrbannextDB').collection('users')
 const Propertiescollectios=client.db('UrbannextDB').collection('properties')
+const Reviewcollection=client.db('UrbannextDB').collection('reviews')
 
 
 
@@ -124,7 +125,7 @@ app.post('/jwt',async(req,res)=>{
 
 
 
-app.get('/user/admin/:email',verifyToken,async(req,res)=>{
+app.get('/user/admin/:email',verifyToken,verifyAdmin,async(req,res)=>{
   const email=req.params.email;
   if(email !== req.decoded.email){
       return res.status(403).send({message:'forbidden access'})
@@ -138,7 +139,7 @@ app.get('/user/admin/:email',verifyToken,async(req,res)=>{
   res.send({admin})
 
 })
-app.get('/user/agent/:email',verifyToken,async(req,res)=>{
+app.get('/user/agent/:email',verifyToken,verifyAgent,async(req,res)=>{
   const email=req.params.email;
   if(email !== req.decoded.email){
       return res.status(403).send({message:'forbidden access'})
@@ -180,13 +181,34 @@ app.patch('/user/agent/:id',async(req,res)=>{
   const result=await UsserCollections.updateOne(filter,updatedDoc)
   res.send(result)
 })
+
+// review api
+
+app.post('/reviews',async(req,res)=>{
+  const allreviews=req.body
+  const result=await Reviewcollection.insertOne(allreviews)
+  res.send(result)
+})
+
+
+app.get('/reviews',async (req,res)=>{
+
+  const cursor =Reviewcollection.find()
+  const result= await cursor.toArray()
+  res.send(result);
+  
+  
+  })
+
+
+// property api
 app.post('/properties',async(req,res)=>{
   const allproperties=req.body
   const result=await Propertiescollectios.insertOne(allproperties)
   res.send(result)
 })
 
-app.get('/properties', async (req,res)=>{
+app.get('/properties',async (req,res)=>{
 
   const cursor =Propertiescollectios.find()
   const result= await cursor.toArray()
@@ -194,6 +216,23 @@ app.get('/properties', async (req,res)=>{
   
   
   })
+
+
+  app.get('/properties/:_id', async (req, res) => {
+    const _id = req.params._id; 
+    const query = { _id: new ObjectId(_id) }; 
+    const result = await Propertiescollectios.findOne(query);
+    res.send(result);
+  });
+
+
+
+
+
+
+
+
+
 
   app.patch('/properties/:id',async(req,res)=>{
     const id=req.params.id;
@@ -213,7 +252,7 @@ app.get('/properties', async (req,res)=>{
 
 
 
-  app.get('/properties/agent/:agentEmail', async (req,res)=>{
+  app.get('/properties/agent/:agentEmail',verifyToken,verifyAgent, async (req,res)=>{
 
     const agentEmail = req.params.agentEmail;
     const query = { agentEmail };
