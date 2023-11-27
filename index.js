@@ -199,7 +199,14 @@ app.get('/reviews',async (req,res)=>{
   
   
   })
-
+  app.delete('/reviews/:id', async (req, res) => {
+    const id = req.params.id;
+    console.log('id from deleterev', id);
+    const query = { _id: new ObjectId(id) };
+    const result = await Reviewcollection.deleteOne(query);
+    res.send(result);
+  });
+  
 
 // property api
 app.post('/properties',async(req,res)=>{
