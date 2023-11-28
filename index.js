@@ -14,7 +14,7 @@ app.use(express.json());
 app.use(cookieParser())
 app.use(
   cors({
-      origin: ['http://localhost:5173'],
+      origin: ['http://localhost:5173','https://urbannesthubs-d6f4b.web.app', 'https://urbannesthubs-d6f4b.firebaseapp.com'],
       credentials: true,
   }),
 )
@@ -33,7 +33,7 @@ const logger = async (req, res, next) => {
 }
 const dbConnect = async () => {
   try {
-      client.connect()
+      // client.connect()
       console.log('DB Connected Successfully✅')
   } catch (error) {
       console.log(error.name, error.message)
@@ -432,7 +432,7 @@ app.post('/properties',async(req,res)=>{
   res.send(result)
 })
 
-app.get('/properties',async (req,res)=>{
+app.get('/prospertie',async (req,res)=>{
 
   const cursor =Propertiescollectios.find()
   const result= await cursor.toArray()
