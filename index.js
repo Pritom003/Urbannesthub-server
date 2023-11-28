@@ -64,7 +64,7 @@ const Propertiescollectios=client.db('UrbannextDB').collection('properties')
 const Reviewcollection=client.db('UrbannextDB').collection('reviews')
 const WishCollection=client.db('UrbannextDB').collection('wished')
 const OfferedCollection=client.db('UrbannextDB').collection('useroffer')
-const paymaymentCollection=client.db('UrbannextDB').collection('payments')
+const AdvertiseCollection=client.db('UrbannextDB').collection('advertised')
 
 
 
@@ -148,11 +148,30 @@ app.post('/payments', async (req, res) => {
 
 
 
+// advertised api
 
+ 
 
+app.get('/advertised',async (req,res)=>{
 
+  const cursor =AdvertiseCollection.find()
+  const result= await cursor.toArray()
+  res.send(result);
+  
+  
+  })
 
-
+  app.get('/latest-reviews', async (req, res) => {
+   
+     
+      const latestReviews = await Reviewcollection.find()
+        .sort({ Reviewstime: -1 }) 
+        .limit(3) 
+        .toArray();
+  
+      res.send(latestReviews);
+    
+  });
 
 // admin  api
 
