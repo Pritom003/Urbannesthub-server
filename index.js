@@ -243,6 +243,34 @@ app.patch('/user/agent/:id',async(req,res)=>{
   res.send(result)
 })
 
+
+
+// handlefraud
+
+app.patch('/user/fraud/:id', async (req, res) => {
+  const userId = req.params.id;
+  const userFilter = { _id: new ObjectId(userId) };
+  const userUpdate = {
+    $set: {
+      role: 'fraud'
+    }
+  };
+  await UsserCollections.updateOne(userFilter, userUpdate);
+  const propertiesFilter = { agentEmail: req.body.agentEmail };
+  await Propertiescollectios.deleteMany(propertiesFilter);
+
+  res.send({ message: 'User marked as fraud, and properties deleted successfully.' });
+});
+
+
+
+
+
+
+
+
+
+
 // review api
 
 app.post('/reviews',async(req,res)=>{
