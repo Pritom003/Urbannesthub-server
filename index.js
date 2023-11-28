@@ -4,6 +4,10 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 var jwt = require('jsonwebtoken');
+
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+
+
 const app = express();
 const port = process.env.PORT || 5000;
 app.use(express.json());
@@ -60,6 +64,7 @@ const Propertiescollectios=client.db('UrbannextDB').collection('properties')
 const Reviewcollection=client.db('UrbannextDB').collection('reviews')
 const WishCollection=client.db('UrbannextDB').collection('wished')
 const OfferedCollection=client.db('UrbannextDB').collection('useroffer')
+const paymaymentCollection=client.db('UrbannextDB').collection('payments')
 
 
 
@@ -93,7 +98,61 @@ const verifyAgent=async(req,res,next)=>{
 
 
 
-// User data
+// paymayment api
+app.post("/create-payment-intent", async (req, res) => {
+  const { price } = req.body;
+  const amount=parseInt(price*100);
+  console.log(amount,'amount inside');
+  const paymentIntent = await stripe.paymentIntents.create({
+
+    amount:amount,
+    currency:"usd",
+    payment_method_types:['card']
+  })
+  res.send({
+    clientSecret: paymentIntent.client_secret,
+  });
+
+})
+
+
+app.post('/payments', async (req, res) => {
+  const payment = req.body;
+  const paymentResult = await paymaymentCollection.insertOne(payment);
+
+
+  res.send(paymentResult)});
+
+
+
+
+
+
+
+
+
+
+  app.patch('/offers/payed/:id', async (req, res) => {
+    const offerId = req.params.id;
+    const status = req.body.request;
+  
+    const result = await OfferedCollection.updateOne(
+      { _id: new ObjectId(offerId) },
+      { $set: { request: status } }
+    )});
+  
+
+
+
+
+
+
+
+
+
+
+
+
 
 // admin  api
 
@@ -257,33 +316,17 @@ app.get('/offers',async (req,res)=>{
   
   
   })
+  app.get('/offers/payment/:_id',async (req,res)=>{
 
-  // Add the following routes to handle offer acceptance, rejection, and removal
-// app.put('/offers/:id', async (req, res) => {
-//   const offerId = req.params.id;
-//   const status = req.body.request; // Assuming the client sends the request status in the body
+    const _id = req.params._id; 
+    const query = { _id: new ObjectId(_id) }; 
+    const result = await OfferedCollection.findOne(query);
+    res.send(result)
+    
+    
+    })
 
-//   // Update the offer status
-//   const result = await OfferedCollection.updateOne({ _id: ObjectId(offerId) }, { $set: { request: status } });
-
-//   res.send(result);
-// });
-
-// app.put('/offers/reject/:propertyId', async (req, res) => {
-//   const offerId = req.body.offerId;
-//   const propertyId = req.params.propertyId;
-
-//   // Reject other offers for the same property
-//   const result = await OfferedCollection.updateMany(
-//     { propertyId: propertyId, _id: { $ne: ObjectId(offerId) } },
-//     { $set: { request: 'rejected' } }
-//   );
-
-//   res.send(result);
-// });
-
-// Update the existing route for accepting an offer
-
+ 
 
 app.put('/offers/reject/:propertyId', async (req, res) => {
   const offerId = req.body.offerId;
@@ -414,22 +457,7 @@ app.get('/properties',async (req,res)=>{
     });
     
 
-    // app.put('/properties/agent/:agentEmail/:_id', async (req, res) => {
-    //   const id = req.params.id;
-    //   const filter = { _id: new ObjectId(id) }
-    //   const options = { upsert: true }
-    //   const updateProduct = req.body;
-    //   const product = {
-    //     $set: {
-    //       photo: updateProduct.photo,
-        
-    //     }
-    //   }
     
-    //   const result=await Propertiescollectios.updateOne(filter,
-    //     product,options)
-    //   res.send(result)
-    // })
 
 
 
