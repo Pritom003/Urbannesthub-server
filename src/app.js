@@ -1,45 +1,46 @@
+// const express = require('express');
 const express = require('express');
+const connetiondb = require("./db/connectdb");
+const applyMiddleware = require("./middlewares/applymiddleware");
+require('dotenv').config();
+const jwt = require('jsonwebtoken');
 require('dotenv').config()
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-const cors = require('cors');
-const cookieParser = require('cookie-parser');
-var jwt = require('jsonwebtoken');
+const port = process.env.PORT || 5000;
+const app = express();
+app.use(express.json());
 
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
-
-const app = express();
-const port = process.env.PORT || 5000;
 app.use(express.json());
-app.use(cookieParser())
-app.use(
-  cors({
-      origin: ['http://localhost:5173','https://urbannesthubs-d6f4b.web.app', 'https://urbannesthubs-d6f4b.firebaseapp.com'],
-      credentials: true,
-  }),
-)
-const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.ucoarqa.mongodb.net/?retryWrites=true&w=majority`;
-const client = new MongoClient(uri, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  }
-});
+// app.use(cookieParser())
+// app.use(
+//   cors({
+//       origin: ['http://localhost:5173','https://urbannesthubs-d6f4b.web.app', 'https://urbannesthubs-d6f4b.firebaseapp.com'],
+//       credentials: true,
+//   }),
+// )
+// const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.ucoarqa.mongodb.net/?retryWrites=true&w=majority`;
+// const client = new MongoClient(uri, {
+//   serverApi: {
+//     version: ServerApiVersion.v1,
+//     strict: true,
+//     deprecationErrors: true,
+//   }
+// });
 
-const logger = async (req, res, next) => {
-  console.log('called:', req.host, req.originalUrl)
-  next();
-}
-const dbConnect = async () => {
-  try {
-      // client.connect()
-      console.log('DB Connected Successfully✅')
-  } catch (error) {
-      console.log(error.name, error.message)
-  }
-}
-dbConnect()
+// const logger = async (req, res, next) => {
+//   console.log('called:', req.host, req.originalUrl)
+//   next();
+// }
+// const dbConnect = async () => {
+//   try {
+//       // client.connect()
+//       console.log('DB Connected Successfully✅')
+//   } catch (error) {
+//       console.log(error.name, error.message)
+//   }
+// }
+// dbConnect()
 // middlewars
 
 const verifyToken = async (req, res, next) => {
@@ -57,7 +58,11 @@ const verifyToken = async (req, res, next) => {
   });
 };
 
-
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.ucoarqa.mongodb.net/${process.env.DATABASE_NAME}?retryWrites=true&w=majority`;
+const client = new MongoClient(uri, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
 
 const UsserCollections=client.db('UrbannextDB').collection('users')
 const Propertiescollectios=client.db('UrbannextDB').collection('properties')
@@ -65,7 +70,6 @@ const Reviewcollection=client.db('UrbannextDB').collection('reviews')
 const WishCollection=client.db('UrbannextDB').collection('wished')
 const OfferedCollection=client.db('UrbannextDB').collection('useroffer')
 const AdvertiseCollection=client.db('UrbannextDB').collection('advertised')
-const paymaymentCollection=client.db('UrbannextDB').collection('payments')
 
 
 
@@ -96,6 +100,12 @@ const verifyAgent=async(req,res,next)=>{
 
 
 
+// jwt related api
+app.post('/jwt',async(req,res)=>{
+  const user=req.body
+  const token=jwt.sign(user,process.env.ACCESS_TOKEN_SECRET,{expiresIn:'1h'})
+  res.send({token});
+})
 
 
 
@@ -128,14 +138,6 @@ app.post('/payments', async (req, res) => {
 
 
 
-  // app.get('/payments',async (req,res)=>{
-
-  //   const cursor =P.find()
-  //   const result= await cursor.toArray()
-  //   res.send(result);
-    
-    
-  //   })
 
 
 
@@ -150,6 +152,125 @@ app.post('/payments', async (req, res) => {
       { $set: { request: status } }
     )});
   
+
+
+
+// 
+
+
+
+
+// property api
+
+
+
+// used mongoose to get the dataaa!!!!--------------------------
+
+const propertyrout=require('./routs/property');
+const { collection } = require('./Model/peoperties');
+
+app.use(propertyrout)
+// ---------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+app.post('/properties',async(req,res)=>{
+  const allproperties=req.body
+  const result=await Propertiescollectios.insertOne(allproperties)
+  res.send(result)
+})
+
+
+
+
+  app.get('/properties/:_id', async (req, res) => {
+    const _id = req.params._id; 
+    const query = { _id: new ObjectId(_id) }; 
+    const result = await Propertiescollectios.findOne(query);
+    res.send(result);
+  });
+
+
+
+
+
+
+
+
+
+
+  app.patch('/properties/:id',async(req,res)=>{
+    const id=req.params.id;
+    const filter={_id:new ObjectId(id)}
+    const updatedDoc={
+        $set:{
+            status:'verified'
+        }
+    }
+    const result=await Propertiescollectios.updateOne(filter,updatedDoc)
+    res.send(result)
+  })
+
+
+  app.patch('/properties/rejected/:id',async(req,res)=>{
+    const id=req.params.id;
+    const filter={_id:new ObjectId(id)}
+    const updatedDoc={
+        $set:{
+            status:'rejected'
+        }
+    }
+    const result=await Propertiescollectios.updateOne(filter,updatedDoc)
+    res.send(result)
+  })
+
+
+
+
+  app.get('/properties/agent/:agentEmail',verifyToken,verifyAgent, async (req,res)=>{
+
+    const agentEmail = req.params.agentEmail;
+    const query = { agentEmail };
+    const result = await Propertiescollectios.find(query).toArray();
+    res.send(result);
+    
+    
+    })
+    app.delete('/properties/agent/:agentEmail/:_id', async (req, res) => {
+      const _id = req.params._id; // Use correct parameter name here
+      console.log('id from delete', _id);
+      const query = { _id: new ObjectId(_id) };
+      const result = await Propertiescollectios.deleteOne(query);
+      res.send(result);
+    });
+    
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -200,12 +321,6 @@ app.get('/user',async (req, res) => {
 });
 
 
-// jwt related api
-app.post('/jwt',async(req,res)=>{
-  const user=req.body
-  const token=jwt.sign(user,process.env.ACCESS_TOKEN_SECRET,{expiresIn:'1h'})
-  res.send({token});
-})
 
 
 
@@ -434,131 +549,12 @@ app.patch('/offers/:id', async (req, res) => {
 
 
 
-// property api
-app.post('/properties',async(req,res)=>{
-  const allproperties=req.body
-  const result=await Propertiescollectios.insertOne(allproperties)
-  res.send(result)
-})
-
-app.get('/properties',async (req,res)=>{
-
-  const cursor =Propertiescollectios.find()
-  const result= await cursor.toArray()
-  res.send(result);
-  
-  
-  })
-
-
-  app.get('/properties/:_id', async (req, res) => {
-    const _id = req.params._id; 
-    const query = { _id: new ObjectId(_id) }; 
-    const result = await Propertiescollectios.findOne(query);
-    res.send(result);
-  });
 
 
 
 
 
 
-
-
-
-  app.patch('/properties/:id',async(req,res)=>{
-    const id=req.params.id;
-    const filter={_id:new ObjectId(id)}
-    const updatedDoc={
-        $set:{
-            status:'verified'
-        }
-    }
-    const result=await Propertiescollectios.updateOne(filter,updatedDoc)
-    res.send(result)
-  })
-
-
-  app.patch('/properties/rejected/:id',async(req,res)=>{
-    const id=req.params.id;
-    const filter={_id:new ObjectId(id)}
-    const updatedDoc={
-        $set:{
-            status:'rejected'
-        }
-    }
-    const result=await Propertiescollectios.updateOne(filter,updatedDoc)
-    res.send(result)
-  })
-
-
-
-
-  app.get('/properties/agent/:agentEmail',verifyToken,verifyAgent, async (req,res)=>{
-
-    const agentEmail = req.params.agentEmail;
-    const query = { agentEmail };
-    const result = await Propertiescollectios.find(query).toArray();
-    res.send(result);
-    
-    
-    })
-    app.delete('/properties/agent/:agentEmail/:_id', async (req, res) => {
-      const _id = req.params._id; 
-      console.log('id from delete', _id);
-      const query = { _id: new ObjectId(_id) };
-      const result = await Propertiescollectios.deleteOne(query);
-      res.send(result);
-    });
-    
-
-    
-    app.put('/properties/:id', async (req, res) => {
-      try {
-        const id = req.params.id;
-        const filter = { _id: new ObjectId(id) };
-        const updatedDoc = {
-          $set: {
-            location: req.body.location,
-            descrption: req.body.descrption,
-            priceRangeMin: req.body.priceRangeMin,
-            priceRangeMax: req.body.priceRangeMax,
-            title: req.body.title,
-          },
-        };
-    
-        const result = await Propertiescollectios.updateOne(filter, updatedDoc);
-    
-        if (result.modifiedCount) {
-          res.status(200).json({ success: true, message: 'Property updated successfully' });
-        } else {
-          res.status(404).json({ success: false, message: 'Property not found' });
-        }
-      } catch (error) {
-        console.error('Error updating property:', error);
-        res.status(500).json({ success: false, message: 'Internal server error' });
-      }
-    });
-    
-    
-
-    // app.patch('/properties/:id',async(req,res)=>{
-    //   const item=req.body;
-    //   const id=req.params.id;
-    //   const filter={_id: new ObjectId(id)}
-    //   const updatedDoc={
-    //     $set: {
-    //       location: item.location,
-    //       description: item.description,
-    //       priceRangeMin: item.priceRangeMin,
-    //       priceRangeMax: item.priceRangeMax,
-    //       title: item.title,
-          
-    //     }
-    //   }
-    //   const result=await Propertiescollectios.updateOne(filter,updatedDoc)
-    //   res.send(result)
-    // })
 
 // -------------------------------------------
 
@@ -597,11 +593,14 @@ app.post('/user', async (req, res) => {
 
 
 
+app.get('/health', (req, res) =>{
+  res.send('UNH is is workign')
+})
 
-  app.get('/', (req, res) =>{
-      res.send('UNH is is workign')
-    })
-
- app.listen(port, () =>{
-  console.log(`UNH server is running on port: ${port}`);
-})   
+const main=async()=>{
+  await collection()
+  app.listen(port, () =>{
+    console.log(`UNH server is running on port: ${port}`);
+    })   
+}
+main()
